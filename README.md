@@ -1,6 +1,19 @@
-# Pcd8544
+# pcd_8544
 
-**TODO: Add description**
+**Elixir library for controlling PCD8544 (Nokia 5110) displays**
+
+Built using Circuits SPI library.
+
+Currently it supports just the basic character output.
+
+## Usage
+
+```elixir
+GenServer.start_link(Pcd8544, [], name: Pcd8544)
+Pcd8544.clear
+Pcd8544.cursorpos(1,1)
+Pcd8544.write("Hello from pcd_8544!")
+```
 
 ## Installation
 
