@@ -157,6 +157,14 @@ defmodule Pcd8544 do
     {:reply, :ok, state}
   end
 
+  @doc """
+  Initializes the screen. Receives optional parameters:
+
+  * `spi_bus` - SPI bus to use (default is 0)
+  * `spi_dev` - SPI device (slave) to use (default is 0)
+  * `dc_pin` - pin on RPi where DC pin of the display is connected to (default is 23)
+  * `rst_pin` - pin on RPi where RST pin of the display is connected to (default is 24)
+  """
   def init(opts \\ []) do
     spi_bus = Keyword.get(opts, :spi_bus, @spi_bus)
     spi_dev = Keyword.get(opts, :spi_dev, @spi_dev)
@@ -168,14 +176,24 @@ defmodule Pcd8544 do
     {:ok, state}
   end
 
+  @doc """
+  Clears the screen
+  """
   def clear() do
     GenServer.call(__MODULE__, :clear)
   end
 
+  @doc """
+  Writes the string `str` to the current position on the screen. The chars are wrapped at the end of the
+  screen.
+  """
   def write(str) do
     GenServer.call(__MODULE__, {:write, str})
   end
 
+  @doc """
+  Set character cursor position
+  """
   def cursorpos(x, y) do
     GenServer.call(__MODULE__, {:cursorpos, {x, y}})
   end
