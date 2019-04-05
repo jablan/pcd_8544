@@ -23,6 +23,7 @@ defmodule Pcd8544.MixProject do
   defp package do
     [
       licenses: ["Apache 2.0"],
+      links: %{"GitHub" => "https://github.com/jablan/pcd_8544"},
       source_url: "https://github.com/jablan/pcd_8544"
     ]
   end
