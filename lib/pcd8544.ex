@@ -10,7 +10,8 @@ defmodule Pcd8544 do
 
   @dc_pin 23
   @rst_pin 24
-  @spi_bus 0
+  @spi_bus 0 # SPI bus
+  @spi_dev 0 # SPI slave device
 
   @commands [
     powerdown: 0x04,
@@ -152,7 +153,9 @@ defmodule Pcd8544 do
   end
 
   def init(opts \\ []) do
-    {:ok, spi} = SPI.open("spidev#{Keyword.get(opts, :spi_bus, @spi_bus)}.0")
+    spi_bus = Keyword.get(opts, :spi_bus, @spi_bus)
+    spi_dev = Keyword.get(opts, :spi_dev, @spi_dev)
+    {:ok, spi} = SPI.open("spidev#{spi_bus}.#{spi_dev}")
     {:ok, dc} = GPIO.open(Keyword.get(opts, :dc_pin, @dc_pin), :output)
     {:ok, rst} = GPIO.open(Keyword.get(opts, :rst_pin, @rst_pin), :output)
     state = %{spi: spi, dc: dc, rst: rst}
