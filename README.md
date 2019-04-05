@@ -11,7 +11,7 @@ Currently it supports just the basic character output.
 ```elixir
 Pcd8544.start_link
 Pcd8544.clear
-Pcd8544.cursorpos(1,1)
+Pcd8544.cursorpos(1, 1)
 Pcd8544.write("Hello from pcd_8544!")
 ```
 

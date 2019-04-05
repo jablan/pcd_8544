@@ -198,13 +198,13 @@ defmodule Pcd8544 do
     GenServer.call(__MODULE__, {:cursorpos, {x, y}})
   end
 
-  def command(%{spi: spi, dc: dc} = state, c) do
+  defp command(%{spi: spi, dc: dc} = state, c) do
     :ok = GPIO.write(dc, 0)
     {:ok, _resp} = SPI.transfer(spi, <<c>>)
     state
   end
 
-  def output_buffer(%{spi: spi, dc: dc} = state, buffer) do
+  defp output_buffer(%{spi: spi, dc: dc} = state, buffer) do
     state
     |> command(@commands[:set_y_addr])
     |> command(@commands[:set_x_addr])
@@ -213,7 +213,7 @@ defmodule Pcd8544 do
     state
   end
 
-  def reset(%{rst: rst} = state) do
+  defp reset(%{rst: rst} = state) do
     :ok = GPIO.write(rst, 0)
     Process.sleep(100)
     :ok = GPIO.write(rst, 1)

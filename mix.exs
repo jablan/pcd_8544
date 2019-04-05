@@ -4,10 +4,12 @@ defmodule Pcd8544.MixProject do
   def project do
     [
       app: :pcd_8544,
+      description: "Elixir driver for PCD8544 based LCD displays",
       version: "0.1.0",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      package: package(),
     ]
   end
 
@@ -18,11 +20,19 @@ defmodule Pcd8544.MixProject do
     ]
   end
 
+  defp package do
+    [
+      licenses: ["Apache 2.0"],
+      source_url: "https://github.com/jablan/pcd_8544"
+    ]
+  end
+
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:circuits_gpio, "~> 0.1"},
       {:circuits_spi, "~> 0.1"},
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false},
     ]
   end
 end
