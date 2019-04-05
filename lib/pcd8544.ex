@@ -1,9 +1,10 @@
 defmodule Pcd8544 do
   @moduledoc """
-  Documentation for Pcd8544.
+  Library for PCD8544 based LED displays (Nokia 5110)
   """
 
   use Bitwise
+  use GenServer
 
   alias Circuits.SPI
   alias Circuits.GPIO
@@ -129,6 +130,10 @@ defmodule Pcd8544 do
     "}" => << 0x00, 0x41, 0x36, 0x08, 0x00 >>,
     "~" => << 0x10, 0x08, 0x08, 0x10, 0x08 >>,
   }
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
 
   def handle_call(:clear, _from, state) do
     output_buffer(state, String.duplicate("\0", 84 * 6))
