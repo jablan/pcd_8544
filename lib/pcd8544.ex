@@ -13,6 +13,7 @@ defmodule Pcd8544 do
   @rst_pin 24
   @spi_bus 0 # SPI bus
   @spi_dev 0 # SPI slave device
+  @scroll_time 500 # ms between scroll events
 
   @commands [
     powerdown: 0x04,
@@ -140,21 +141,33 @@ defmodule Pcd8544 do
     {:reply, :ok, state}
   end
 
-  def handle_call({:write, str}, _from, %{spi: spi, dc: dc} = state) do
-    :ok = GPIO.write(dc, 1)
-    str
-    |> String.codepoints
-    |> Enum.each(fn(c) ->
-      SPI.transfer(spi, Map.get(@charset, c, @unknown_char) <> "\0" )
-    end)
+  def handle_call({:write, str}, _from, state) do
+    write(str, state)
     {:reply, :ok, state}
   end
 
   def handle_call({:cursorpos, {x, y}}, _from, state) do
-    state
-    |> command(@commands[:set_y_addr] ||| y)
-    |> command(@commands[:set_x_addr] ||| (x * 6))
+    cursorpos(x, y, state)
     {:reply, :ok, state}
+  end
+
+  def handle_call({:scroll, {str, x, y, len}}, _from, %{scrolls: scrolls} = state) do
+    new_scroll = %{str: str, x: x, y: y, len: len, pos: 0}
+    {:reply, :ok, Map.put(state, :scrolls, [new_scroll | scrolls])}
+  end
+
+  def handle_info(:scroll, %{scrolls: scrolls} = state) do
+    scrolls = Enum.map(scrolls, fn(%{str: str, x: x, y: y, len: len, pos: pos} = scroll) ->
+      str_len = String.length(str)
+      cursorpos(x, y, state)
+      str
+      |> String.slice(pos, len)
+      |> String.pad_trailing(len)
+      |> write(state)
+      Map.put(scroll, :pos, if(pos >= str_len - len, do: 0, else: pos + 1))
+    end)
+    Process.send_after(__MODULE__, :scroll, @scroll_time)
+    {:noreply, Map.put(state, :scrolls, scrolls)}
   end
 
   @doc """
@@ -171,13 +184,14 @@ defmodule Pcd8544 do
     {:ok, spi} = SPI.open("spidev#{spi_bus}.#{spi_dev}")
     {:ok, dc} = GPIO.open(Keyword.get(opts, :dc_pin, @dc_pin), :output)
     {:ok, rst} = GPIO.open(Keyword.get(opts, :rst_pin, @rst_pin), :output)
-    state = %{spi: spi, dc: dc, rst: rst}
+    state = %{spi: spi, dc: dc, rst: rst, scrolls: []}
     reset(state)
+    Process.send_after(__MODULE__, :scroll, 1000)
     {:ok, state}
   end
 
   @doc """
-  Clears the screen
+  Clears the screen.
   """
   def clear() do
     GenServer.call(__MODULE__, :clear)
@@ -192,7 +206,16 @@ defmodule Pcd8544 do
   end
 
   @doc """
-  Set character cursor position
+  Writes the string `str` at given coordinates `x`, `y`, and within given length `len` and then scrolls it
+  if longer than the box given. The text is scrolled character by character with 500ms pause inbetween.
+  Multiple of these boxes can be presented simultaneously and the GenServer takes care about refreshing.
+  """
+  def scroll(str, x, y, len) do
+    GenServer.call(__MODULE__, {:scroll, {str, x, y, len}})
+  end
+
+  @doc """
+  Sets character cursor position.
   """
   def cursorpos(x, y) do
     GenServer.call(__MODULE__, {:cursorpos, {x, y}})
@@ -224,5 +247,20 @@ defmodule Pcd8544 do
     |> command(@commands[:function_set_basic])
     |> command(@commands[:display_normal])
     state
+  end
+
+  defp cursorpos(x, y, state) do
+    state
+    |> command(@commands[:set_y_addr] ||| y)
+    |> command(@commands[:set_x_addr] ||| (x * 6))
+  end
+
+  defp write(str, %{spi: spi, dc: dc}) do
+    :ok = GPIO.write(dc, 1)
+    str
+    |> String.codepoints
+    |> Enum.each(fn(c) ->
+      SPI.transfer(spi, Map.get(@charset, c, @unknown_char) <> "\0" )
+    end)
   end
 end
